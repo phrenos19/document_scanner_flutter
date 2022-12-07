@@ -10,7 +10,7 @@
 
     <application
         android:requestLegacyExternalStorage="true"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:largeHeap="true"
         android:hardwareAccelerated="true">
         <activity
