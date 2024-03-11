@@ -1,31 +1,25 @@
 PODS:
   - advance_pdf_viewer (1.0.5):
     - Flutter
-  - document_scanner_flutter (0.0.1):
+  - document_scanner_flutter (0.3.0):
     - Flutter
-    - WeScan (>= 0.9)
+    - WeScan
   - Flutter (1.0.0)
-  - FMDB (2.7.5):
-    - FMDB/standard (= 2.7.5)
-  - FMDB/standard (2.7.5)
-  - path_provider (0.0.1):
+  - path_provider_foundation (0.0.1):
     - Flutter
-  - sqflite (0.0.2):
+    - FlutterMacOS
+  - sqflite (0.0.3):
     - Flutter
-    - FMDB (>= 2.7.5)
-  - WeScan (1.7.0)
+    - FlutterMacOS
+  - WeScan (3.0.0)
 
 DEPENDENCIES:
   - advance_pdf_viewer (from `.symlinks/plugins/advance_pdf_viewer/ios`)
   - document_scanner_flutter (from `.symlinks/plugins/document_scanner_flutter/ios`)
   - Flutter (from `Flutter`)
-  - path_provider (from `.symlinks/plugins/path_provider/ios`)
-  - sqflite (from `.symlinks/plugins/sqflite/ios`)
-
-SPEC REPOS:
-  trunk:
-    - FMDB
-    - WeScan
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - sqflite (from `.symlinks/plugins/sqflite/darwin`)
+  - WeScan (from `.symlinks/plugins/document_scanner_flutter/ios/WeScan-local`)
 
 EXTERNAL SOURCES:
   advance_pdf_viewer:
@@ -34,20 +28,21 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/document_scanner_flutter/ios"
   Flutter:
     :path: Flutter
-  path_provider:
-    :path: ".symlinks/plugins/path_provider/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   sqflite:
-    :path: ".symlinks/plugins/sqflite/ios"
+    :path: ".symlinks/plugins/sqflite/darwin"
+  WeScan:
+    :path: ".symlinks/plugins/document_scanner_flutter/ios/WeScan-local"
 
 SPEC CHECKSUMS:
   advance_pdf_viewer: 5c832f382b4ca84fe735f893b7e91aa830c27d7b
-  document_scanner_flutter: cbbff63c2e3060e0593729cea2596120b62e794c
-  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
-  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
-  path_provider: abfe2b5c733d04e238b0d8691db0cfd63a27a93c
-  sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
-  WeScan: fed582f6c38014d529afb5aa9ffd1bad38fc72b7
+  document_scanner_flutter: c9dbc6e1040a60f38278d8df18893303a530a60c
+  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
+  sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
+  WeScan: f50277f7304d146d9ebc4ebdc1b587df84dcdd8b
 
-PODFILE CHECKSUM: 4ed0ca5a94a4955c056ea607941f977e176580d4
+PODFILE CHECKSUM: f6fa83766ec2eff3c769515b447ed0639edbed6e
 
-COCOAPODS: 1.10.1
+COCOAPODS: 1.14.3
