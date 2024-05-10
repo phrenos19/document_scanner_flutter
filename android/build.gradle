@@ -2,14 +2,14 @@ group 'com.document.scanner.flutter.document_scanner_flutter'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.6.10'
+    ext.kotlin_version = '1.8.22'
     repositories {
         google()
         jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.1.2'
+        classpath 'com.android.tools.build:gradle:7.3.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -27,11 +27,16 @@ apply plugin: 'kotlin-android'
 
 
 android {
-    compileSdkVersion 33
+    compileSdk 34
+
+    // Conditional for compatibility with AGP <4.2.
+    if (project.android.hasProperty("namespace")) {
+        namespace 'com.document.scanner.flutter.document_scanner_flutter'
+    }
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         ndkVersion "21.1.6352462"
@@ -66,5 +71,5 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:22.2.0'
     implementation 'com.google.android.material:material:1.2.1'
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'com.github.criistian14:AndroidDocumentScanLibrary:1.9.0'
+    implementation 'com.github.criistian14:AndroidDocumentScanLibrary:2.0.0'
 }
