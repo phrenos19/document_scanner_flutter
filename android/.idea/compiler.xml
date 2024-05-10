@@ -2,6 +2,7 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel target="11">
+      <module name="android.document_scanner_flutter" target="21" />
       <module name="com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter" target="17" />
     </bytecodeTargetLevel>
   </component>

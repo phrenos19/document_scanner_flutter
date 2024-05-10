@@ -13,15 +13,25 @@ class DocumentScannerFlutter {
   static MethodChannel get _channel =>
       const MethodChannel('document_scanner_flutter');
 
-  static Future<File?> _scanDocument(
-      ScannerFileSource source, Map<dynamic, String> androidConfigs) async {
-    Map<String, String?> finalAndroidArgs = {};
+  static Future<File?> _scanDocument(ScannerFileSource source,
+      Map<dynamic, String> androidConfigs, {
+        Uint8List? initialImage,
+        bool canBackToInitial = true,
+      }) async {
+    Map<String, dynamic> finalAndroidArgs = {};
     for (var entry in androidConfigs.entries) {
       finalAndroidArgs[describeEnum(entry.key)] = entry.value;
     }
 
+    if (initialImage != null) {
+      finalAndroidArgs["INITIAL_IMAGE"] = initialImage;
+    }
+    finalAndroidArgs["CAN_BACK_TO_INITIAL"] = canBackToInitial;
+
     String? path = await _channel.invokeMethod(
-        describeEnum(source).toLowerCase(), finalAndroidArgs);
+      describeEnum(source).toLowerCase(),
+      finalAndroidArgs,
+    );
     if (path == null) {
       return null;
     } else {
@@ -38,7 +48,7 @@ class DocumentScannerFlutter {
   /// `androidConfigs` : Android scanner labels configuration
   static Future<File?> launchForPdf(BuildContext context,
       {ScannerFileSource? source,
-      Map<dynamic, String> labelsConfig = const {}}) async {
+        Map<dynamic, String> labelsConfig = const {}}) async {
     Future<File?>? launchWrapper() {
       return launch(context, labelsConfig: labelsConfig, source: source);
     }
@@ -54,12 +64,21 @@ class DocumentScannerFlutter {
   /// `context` : BuildContext to attach source selection
   /// `source` : Either ScannerFileSource.CAMERA or ScannerFileSource.GALLERY
   /// `androidConfigs` : Android scanner labels configuration
-  static Future<File?>? launch(BuildContext context,
-      {ScannerFileSource? source,
-      Map<dynamic, String> labelsConfig = const {}}) {
+  static Future<File?>? launch(BuildContext context, {
+    ScannerFileSource? source,
+    Map<dynamic, String> labelsConfig = const {},
+    Uint8List? initialImage,
+    bool canBackToInitial = true,
+  }) {
     if (source != null) {
-      return _scanDocument(source, labelsConfig);
+      return _scanDocument(
+        source,
+        labelsConfig,
+        initialImage: initialImage,
+        canBackToInitial: canBackToInitial,
+      );
     }
+
     return showModalBottomSheet<File>(
         context: context,
         isDismissible: false,
@@ -74,9 +93,12 @@ class DocumentScannerFlutter {
                             'Camera'),
                     onTap: () async {
                       Navigator.pop(
-                          context,
-                          await _scanDocument(
-                              ScannerFileSource.CAMERA, labelsConfig));
+                        context,
+                        await _scanDocument(
+                          ScannerFileSource.CAMERA,
+                          labelsConfig,
+                        ),
+                      );
                     }),
                 new ListTile(
                   leading: new Icon(Icons.image_search),
@@ -85,9 +107,12 @@ class DocumentScannerFlutter {
                           'Photo Library'),
                   onTap: () async {
                     Navigator.pop(
-                        context,
-                        await _scanDocument(
-                            ScannerFileSource.GALLERY, labelsConfig));
+                      context,
+                      await _scanDocument(
+                        ScannerFileSource.GALLERY,
+                        labelsConfig,
+                      ),
+                    );
                   },
                 ),
               ],

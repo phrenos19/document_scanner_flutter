@@ -28,14 +28,18 @@ import kotlin.collections.ArrayList
 import android.R.attr.data
 import android.content.Context
 import android.database.Cursor
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.core.net.toFile
 import com.scanlibrary.ScanActivity
 import com.scanlibrary.ScanConstants
+import java.io.FileOutputStream
 import kotlin.collections.HashMap
 
 
 /** DocumentScannerFlutterPlugin */
-class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, PluginRegistry.ActivityResultListener {
+class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
+    PluginRegistry.ActivityResultListener {
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
     /// This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -72,9 +76,11 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
             "camera" -> {
                 camera()
             }
+
             "gallery" -> {
                 gallery()
             }
+
             else -> {
                 result.notImplemented()
             }
@@ -91,7 +97,7 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
         activityPluginBinding = null
     }
 
-    private fun composeIntentArguments(intent:Intent) = mapOf(
+    private fun composeIntentArguments(intent: Intent) = mapOf(
         ScanConstants.SCAN_NEXT_TEXT to "ANDROID_NEXT_BUTTON_LABEL",
         ScanConstants.SCAN_SAVE_TEXT to "ANDROID_SAVE_BUTTON_LABEL",
         ScanConstants.SCAN_ROTATE_LEFT_TEXT to "ANDROID_ROTATE_LEFT_LABEL",
@@ -103,15 +109,35 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
         ScanConstants.SCAN_APPLYING_FILTER_MESSAGE to "ANDROID_APPLYING_FILTER_MESSAGE",
         ScanConstants.SCAN_CANT_CROP_ERROR_TITLE to "ANDROID_CANT_CROP_ERROR_TITLE",
         ScanConstants.SCAN_CANT_CROP_ERROR_MESSAGE to "ANDROID_CANT_CROP_ERROR_MESSAGE",
-        ScanConstants.SCAN_OK_LABEL to "ANDROID_OK_LABEL"
+        ScanConstants.SCAN_OK_LABEL to "ANDROID_OK_LABEL",
     ).entries.filter { call.hasArgument(it.value) && call.argument<String>(it.value) != null }.forEach {
-        intent.putExtra(it.key,  call.argument<String>(it.value))
+        intent.putExtra(it.key, call.argument<String>(it.value))
     }
 
     private fun camera() {
         activityPluginBinding?.activity?.apply {
             val intent = Intent(this, ScanActivity::class.java)
-            intent.putExtra(ScanConstants.OPEN_INTENT_PREFERENCE,  ScanConstants.OPEN_CAMERA)
+            intent.putExtra(ScanConstants.OPEN_INTENT_PREFERENCE, ScanConstants.OPEN_CAMERA)
+
+
+            val hasInitialImage = call.hasArgument("INITIAL_IMAGE")
+            if (hasInitialImage) {
+                try {
+                    val initialImage = call.argument<ByteArray>("INITIAL_IMAGE") ?: return
+
+                    val uri = saveImageToFile(this, initialImage)
+
+                    intent.putExtra(ScanConstants.INITIAL_IMAGE, uri.toString())
+                    intent.putExtra(
+                        ScanConstants.CAN_BACK_TO_INITIAL,
+                        call.argument<Boolean?>("CAN_BACK_TO_INITIAL")
+                    )
+                } catch (e: Exception) {
+                    Log.wtf("Document_Scanner", e)
+                }
+            }
+
+
             composeIntentArguments(intent)
             startActivityForResult(intent, SCAN_REQUEST_CODE)
         }
@@ -149,11 +175,12 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                     activityPluginBinding?.activity?.apply {
                         val uri = data!!.extras!!.getParcelable<Uri>(ScanConstants.SCANNED_RESULT)
                         println(uri)
-                        result?.success(getRealPathFromUri(activityPluginBinding!!.activity,uri))
+                        result?.success(getRealPathFromUri(activityPluginBinding!!.activity, uri))
                     }
                 }
                 true
             }
+
             else -> false
         }
     }
@@ -163,4 +190,28 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {}
 
 
+    private fun saveImageToFile(context: Context, byteArray: ByteArray): Uri? {
+        try {
+            // ByteArray to Bitmap
+            val bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size) ?: return null
+
+            // Make a temporal file
+            val file = File(context.externalCacheDir, "temp_image_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(file).use { output ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
+            }
+
+            // Insert image in MediaStore & return Uri
+            val contentUri: String? = MediaStore.Images.Media.insertImage(
+                context.contentResolver,
+                bitmap,
+                "Title - ${System.currentTimeMillis()}",
+                null
+            )
+            return Uri.parse(contentUri)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
+    }
 }
