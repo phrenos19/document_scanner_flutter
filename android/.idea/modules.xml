@@ -2,11 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter.iml" filepath="$PROJECT_DIR$/.idea/modules/com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter.androidTest~1.iml" filepath="$PROJECT_DIR$/.idea/modules/com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter.androidTest~1.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter.main~1.iml" filepath="$PROJECT_DIR$/.idea/modules/com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter.main~1.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter.unitTest~1.iml" filepath="$PROJECT_DIR$/.idea/modules/com.document.scanner.flutter.document_scanner_flutter.document_scanner_flutter.unitTest~1.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/document_scanner_flutter.iml" filepath="$PROJECT_DIR$/.idea/modules/document_scanner_flutter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android.document_scanner_flutter.iml" filepath="$PROJECT_DIR$/.idea/modules/android.document_scanner_flutter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android.document_scanner_flutter.androidTest~1.iml" filepath="$PROJECT_DIR$/.idea/modules/android.document_scanner_flutter.androidTest~1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android.document_scanner_flutter.main.iml" filepath="$PROJECT_DIR$/.idea/modules/android.document_scanner_flutter.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android.document_scanner_flutter.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/android.document_scanner_flutter.unitTest.iml" />
     </modules>
   </component>
 </project>
