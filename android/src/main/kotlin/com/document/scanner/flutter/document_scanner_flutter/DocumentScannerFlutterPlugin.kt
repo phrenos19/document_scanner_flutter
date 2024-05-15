@@ -26,13 +26,21 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 import android.R.attr.data
+import android.app.ProgressDialog
 import android.content.Context
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.net.toFile
+import androidx.exifinterface.media.ExifInterface
+import com.scanlibrary.ProgressDialogFragment
 import com.scanlibrary.ScanActivity
 import com.scanlibrary.ScanConstants
+import kotlinx.coroutines.*
+import java.io.ByteArrayInputStream
 import java.io.FileOutputStream
 import kotlin.collections.HashMap
 
@@ -81,6 +89,24 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                 gallery()
             }
 
+            "retrieveLostData" -> {
+                activityPluginBinding?.activity?.apply {
+                    val sharedPref = this.getSharedPreferences("AppData", Context.MODE_PRIVATE)
+                    val imageSaved = sharedPref.getString("imagePathDocumentScanner", null)
+
+                    // * Remove
+                    with(sharedPref.edit()) {
+                        remove("imagePathDocumentScanner")
+                        apply()
+                    }
+
+                    result.success(imageSaved)
+                    return
+                }
+
+                result.success(null)
+            }
+
             else -> {
                 result.notImplemented()
             }
@@ -123,20 +149,48 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
             val hasInitialImage = call.hasArgument("INITIAL_IMAGE")
             if (hasInitialImage) {
                 try {
-                    val initialImage = call.argument<ByteArray>("INITIAL_IMAGE") ?: return
+                    GlobalScope.launch(Dispatchers.Main) {
+                        val initialImage = call.argument<ByteArray>("INITIAL_IMAGE") ?: return@launch
 
-                    val uri = saveImageToFile(this, initialImage)
+                        val messageLoading =
+                            call.argument<String>("ANDROID_INITIAL_IMAGE_LOADING_MESSAGE") ?: "Saving image..."
 
-                    intent.putExtra(ScanConstants.INITIAL_IMAGE, uri.toString())
-                    intent.putExtra(
-                        ScanConstants.CAN_BACK_TO_INITIAL,
-                        call.argument<Boolean?>("CAN_BACK_TO_INITIAL")
-                    )
+                        val progressDialog = ProgressDialog(activityPluginBinding!!.activity).apply {
+                            setMessage(messageLoading)
+                            setCancelable(false)
+                            setCanceledOnTouchOutside(false)
+                            show()
+                        }
+
+                        val rotationDegrees = withContext(Dispatchers.IO) {
+                            getRotationDegreesFromByteArray(initialImage)
+                        }
+
+                        io.flutter.Log.wtf("Document_Scanner", "Rotate Image $rotationDegrees")
+
+                        val uri = withContext(Dispatchers.IO) {
+                            saveImageToFile(activityPluginBinding!!.activity, initialImage, rotationDegrees)
+                        }
+
+                        progressDialog.dismiss()
+
+                        uri?.let {
+                            intent.putExtra(ScanConstants.INITIAL_IMAGE, it.toString())
+                            intent.putExtra(
+                                ScanConstants.CAN_BACK_TO_INITIAL,
+                                call.argument<Boolean?>("CAN_BACK_TO_INITIAL")
+                            )
+                        }
+
+                        composeIntentArguments(intent)
+                        startActivityForResult(intent, SCAN_REQUEST_CODE)
+                    }
+
+                    return
                 } catch (e: Exception) {
                     Log.wtf("Document_Scanner", e)
                 }
             }
-
 
             composeIntentArguments(intent)
             startActivityForResult(intent, SCAN_REQUEST_CODE)
@@ -174,14 +228,24 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                 if (requestCode == SCAN_REQUEST_CODE) {
                     activityPluginBinding?.activity?.apply {
                         val uri = data!!.extras!!.getParcelable<Uri>(ScanConstants.SCANNED_RESULT)
-                        println(uri)
-                        result?.success(getRealPathFromUri(activityPluginBinding!!.activity, uri))
+                        val realPath = getRealPathFromUri(activityPluginBinding!!.activity, uri)
+
+                        val sharedPref = this.getSharedPreferences("AppData", Context.MODE_PRIVATE)
+                        with(sharedPref.edit()) {
+                            putString("imagePathDocumentScanner", realPath)
+                            apply()
+                        }
+
+                        result?.success(realPath)
                     }
                 }
                 true
             }
 
-            else -> false
+            else -> {
+                result?.success(null)
+                false
+            }
         }
     }
 
@@ -189,29 +253,65 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {}
 
+    private fun getRotationDegreesFromByteArray(byteArray: ByteArray): Float {
+        ByteArrayInputStream(byteArray).use { inputStream ->
+            val exifInterface = ExifInterface(inputStream)
+            val orientation =
+                exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
 
-    private fun saveImageToFile(context: Context, byteArray: ByteArray): Uri? {
+            return when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                else -> 0f
+            }
+        }
+    }
+
+    private fun saveImageToFile(context: Context, byteArray: ByteArray, rotationDegrees: Float): Uri? {
+        // ByteArray to Bitmap
+        var bitmap: Bitmap? = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+
         try {
-            // ByteArray to Bitmap
-            val bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size) ?: return null
+            if (bitmap == null) return null
+
+            val rotatedBitmap = if (rotationDegrees != 0f) {
+                val rotated = rotateBitmap(bitmap, rotationDegrees)
+                bitmap.recycle()
+                bitmap = null
+                rotated
+            } else {
+                bitmap
+            }
 
             // Make a temporal file
             val file = File(context.externalCacheDir, "temp_image_${System.currentTimeMillis()}.jpg")
             FileOutputStream(file).use { output ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
+                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
             }
 
             // Insert image in MediaStore & return Uri
             val contentUri: String? = MediaStore.Images.Media.insertImage(
                 context.contentResolver,
-                bitmap,
+                rotatedBitmap,
                 "Title - ${System.currentTimeMillis()}",
                 null
             )
+
+            rotatedBitmap.recycle()
             return Uri.parse(contentUri)
         } catch (e: Exception) {
+            bitmap?.recycle()
             e.printStackTrace()
         }
         return null
+    }
+
+    private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix().apply {
+            postRotate(angle)
+        }
+
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
     }
 }

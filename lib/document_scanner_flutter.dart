@@ -13,11 +13,12 @@ class DocumentScannerFlutter {
   static MethodChannel get _channel =>
       const MethodChannel('document_scanner_flutter');
 
-  static Future<File?> _scanDocument(ScannerFileSource source,
-      Map<dynamic, String> androidConfigs, {
-        Uint8List? initialImage,
-        bool canBackToInitial = true,
-      }) async {
+  static Future<File?> _scanDocument(
+    ScannerFileSource source,
+    Map<dynamic, String> androidConfigs, {
+    Uint8List? initialImage,
+    bool canBackToInitial = true,
+  }) async {
     Map<String, dynamic> finalAndroidArgs = {};
     for (var entry in androidConfigs.entries) {
       finalAndroidArgs[describeEnum(entry.key)] = entry.value;
@@ -48,7 +49,7 @@ class DocumentScannerFlutter {
   /// `androidConfigs` : Android scanner labels configuration
   static Future<File?> launchForPdf(BuildContext context,
       {ScannerFileSource? source,
-        Map<dynamic, String> labelsConfig = const {}}) async {
+      Map<dynamic, String> labelsConfig = const {}}) async {
     Future<File?>? launchWrapper() {
       return launch(context, labelsConfig: labelsConfig, source: source);
     }
@@ -64,7 +65,8 @@ class DocumentScannerFlutter {
   /// `context` : BuildContext to attach source selection
   /// `source` : Either ScannerFileSource.CAMERA or ScannerFileSource.GALLERY
   /// `androidConfigs` : Android scanner labels configuration
-  static Future<File?>? launch(BuildContext context, {
+  static Future<File?>? launch(
+    BuildContext context, {
     ScannerFileSource? source,
     Map<dynamic, String> labelsConfig = const {},
     Uint8List? initialImage,
@@ -119,5 +121,14 @@ class DocumentScannerFlutter {
             ),
           );
         });
+  }
+
+  static Future<File?> retrieveLostData() async {
+    if (!Platform.isAndroid) return null;
+
+    String? path = await _channel.invokeMethod("retrieveLostData");
+
+    if (path == null) return null;
+    return File(path);
   }
 }
