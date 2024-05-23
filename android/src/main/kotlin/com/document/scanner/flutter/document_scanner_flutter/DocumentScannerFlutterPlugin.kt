@@ -166,8 +166,6 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                             getRotationDegreesFromByteArray(initialImage)
                         }
 
-                        io.flutter.Log.wtf("Document_Scanner", "Rotate Image $rotationDegrees")
-
                         val uri = withContext(Dispatchers.IO) {
                             saveImageToFile(activityPluginBinding!!.activity, initialImage, rotationDegrees)
                         }
@@ -236,14 +234,27 @@ class DocumentScannerFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                             apply()
                         }
 
-                        result?.success(realPath)
+                        if (result != null) {
+                            result?.success(realPath)
+                            result = null
+                        }
                     }
                 }
+
                 true
             }
 
+            Activity.RESULT_CANCELED -> {
+                if (result != null) {
+                    result?.success(null)
+                    result = null
+                }
+
+                false
+            }
+
             else -> {
-                result?.success(null)
+                result = null
                 false
             }
         }
